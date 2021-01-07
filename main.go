@@ -151,13 +151,13 @@ func main() {
 				enbededValue := ""
 
 				if status == "firing" {
-					enbededName = fmt.Sprintf("[Problem] %s on %s", alert.Labels["alertname"], alert.Labels["instance_name"])
+					enbededName = fmt.Sprintf("[Problem] %s on %s", alert.Labels["alertname"], alert.Labels["common_name"])
 
-					enbededValue = fmt.Sprintf("I am sending this message to inform you that Prometheus target %s is experiencing problems related to %s. The criticality of this event is classified as %s. Make sure everything is correct.", alert.Labels["instance_name"], alert.Labels["alertname"], alert.Labels["severity"])
+					enbededValue = fmt.Sprintf("I am sending this message to inform you that Prometheus target %s is experiencing problems related to %s. The criticality of this event is classified as %s. Make sure everything is correct.", alert.Labels["common_name"], alert.Labels["alertname"], alert.Labels["severity"])
 				} else if status == "resolved" {
-					enbededName = fmt.Sprintf("[Solved] %s on %s has been solved", alert.Labels["alertname"], alert.Labels["instance_name"])
+					enbededName = fmt.Sprintf("[Solved] %s on %s has been solved", alert.Labels["alertname"], alert.Labels["common_name"])
 
-					enbededValue = fmt.Sprintf("I am sending this message to inform you that the problem reported on Prometheus target %s has just been solved, and everything is now under control.", alert.Labels["instance_name"])
+					enbededValue = fmt.Sprintf("I am sending this message to inform you that the problem reported on Prometheus target %s has just been solved, and everything is now under control.", alert.Labels["common_name"])
 				}
 
 				RichEmbed.Fields = append(RichEmbed.Fields, discordEmbedField{
