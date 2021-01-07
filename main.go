@@ -11,7 +11,6 @@ import (
 	"net/url"
 	"os"
 	"regexp"
-	"strings"
 )
 
 // Discord color values
@@ -71,6 +70,10 @@ type discordEmbedField struct {
 const defaultListenAddress = "127.0.0.1:9094"
 
 func main() {
+
+	// group marked to receive the alerts
+	alertGroup := os.Getenv("ALERT_GROUP_ID")
+
 	envWhURL := os.Getenv("DISCORD_WEBHOOK")
 	whURL := flag.String("webhook.url", envWhURL, "Discord WebHook URL.")
 
@@ -119,8 +122,15 @@ func main() {
 		for status, alerts := range groupedAlerts {
 			DO := discordOut{}
 
+			embedTitle := ""
+			if status == "firing" {
+				embedTitle = fmt.Sprintf("New %s alert", amo.CommonLabels.Alertname)
+			} else if status == "resolved" {
+				embedTitle = fmt.Sprintf("%s resolved", amo.CommonLabels.Alertname)
+			}
+
 			RichEmbed := discordEmbed{
-				Title:       fmt.Sprintf("[%s:%d] %s", strings.ToUpper(status), len(alerts), amo.CommonLabels.Alertname),
+				Title:       embedTitle,
 				Description: amo.CommonAnnotations.Summary,
 				Color:       ColorGrey,
 				Fields:      []discordEmbedField{},
@@ -128,23 +138,31 @@ func main() {
 
 			if status == "firing" {
 				RichEmbed.Color = ColorRed
+
+				DO.Content = fmt.Sprintf("%s There is a new prometheus alert that needs attention :fire:", alertGroup)
 			} else if status == "resolved" {
 				RichEmbed.Color = ColorGreen
-			}
 
-			if amo.CommonAnnotations.Summary != "" {
-				DO.Content = fmt.Sprintf(" === %s === \n", amo.CommonAnnotations.Summary)
+				DO.Content = fmt.Sprintf("%s I bring you good news :partying_face: A problem alert generated on prometheus has been solved.", alertGroup)
 			}
 
 			for _, alert := range alerts {
-				realname := alert.Labels["instance"]
-				if strings.Contains(realname, "localhost") && alert.Labels["exported_instance"] != "" {
-					realname = alert.Labels["exported_instance"]
+				enbededName := ""
+				enbededValue := ""
+
+				if status == "firing" {
+					enbededName = fmt.Sprintf("[Problem] %s on %s", alert.Labels["alertname"], alert.Labels["instance_name"])
+
+					enbededValue = fmt.Sprintf("I am sending this message to inform you that Prometheus target %s is experiencing problems related to %s. The criticality of this event is classified as %s. Make sure everything is correct.", alert.Labels["instance_name"], alert.Labels["alertname"], alert.Labels["severity"])
+				} else if status == "resolved" {
+					enbededName = fmt.Sprintf("[Solved] %s on %s has been solved", alert.Labels["alertname"], alert.Labels["instance_name"])
+
+					enbededValue = fmt.Sprintf("I am sending this message to inform you that the problem reported on Prometheus target %s has just been solved, and everything is now under control.", alert.Labels["instance_name"])
 				}
 
 				RichEmbed.Fields = append(RichEmbed.Fields, discordEmbedField{
-					Name:  fmt.Sprintf("[%s]: %s on %s", strings.ToUpper(status), alert.Labels["alertname"], realname),
-					Value: alert.Annotations.Description,
+					Name:  enbededName,
+					Value: enbededValue,
 				})
 			}
 
