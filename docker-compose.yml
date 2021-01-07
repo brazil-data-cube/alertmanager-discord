@@ -1,0 +1,9 @@
+version: "3.7"
+services: 
+  alertmanager-discord:
+    build: .
+    container_name: alertmanager-discord
+    ports:
+      - "9094:9094"
+    env_file: 
+      - .env
